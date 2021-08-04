@@ -1,0 +1,176 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualMachineName": {
+      "type": "string"
+    },
+    "Region": {
+      "type": "string",
+      "metadata": {
+        "description": "Please select the Azure region"
+      },
+      "defaultValue": "UKSouth",
+      "allowedValues": [
+        "UKWest",
+        "UKSouth"
+      ]
+    },
+    "VMSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Please sleect the Virtual Machine Size"
+      },
+      "defaultValue": "Standard_B2s",
+      "allowedValues": [
+        "Standard_B2s",
+        "Standard_D2s_v3",
+        "Standard_D4_v3",
+        "Standard_D4s_v3",
+        "Standard_E4s_v3",
+        "Standard_E2s_v3",
+        "Standard_L8s_v2",
+        "Standard_DS15_v2",
+        "Standard_E4-2s_v3",
+        "Standard_DS13-2_v2"
+    
+      ]
+    },
+    "subnetname": {
+      "type": "string",
+      "metadata": {
+        "description": "Choose a Subnet"
+      },
+      "defaultValue": "INTEG-PROD-Subnet",
+      "allowedValues": [
+        "AzureADDS_Subnet",
+        "AzureArcGIS",
+        "AzureBastionSubnet",
+        "WebServer",
+        "INTEG-UAT-Subnet",
+        "INTEG-PROD-Subnet",
+        "INTEG-SExample-Subnet",
+        "Lepton-Integ-NSG",
+        "WebServer",
+        "TCS-Automation-Test",
+        "JFL-external-dns-master",
+        "JFL-gExamplelab-Subnet",
+        "EPT_Design_WS_Subnet",
+        "TestAndAutomation",
+        "AZ-NWD-Lighthouse",
+        "AZ-UKS-FLIPSIDE-CMS",
+        "AZ-UKS-FLIPSIDE-PGSQL"
+        
+      ]
+    },
+
+    
+
+    "adminUsername": {
+      "type": "string"
+    },
+    "adminPassword": {
+      "type": "secureString"
+    }
+  },
+  "variables": {
+
+    "vnetId": "/subscriptions/76cc26e8-3d48-49aa-9142-f88f0e2b258e/resourceGroups/JFL_Default_RG/providers/Microsoft.Network/virtualNetworks/JFL_Default_Vnet",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+    "networkinterfacename": "[concat(parameters('virtualMachineName'), '-NIC01')]"
+  },
+    "resources": [
+        {
+            "name": "[variables('networkinterfacename')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-04-01",
+            "location": "[parameters('Region')]",
+            
+            "properties": {
+               
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                            
+                        }
+                    }
+                ]
+                
+            },
+            "tags": {
+                "Environment": "DEV",
+                "Business Owner": "Example",
+                "Department": "Example",
+              "Cost Centre": "Example",
+              "Project":  "JFL"
+            }
+        },
+        {
+            "name": "[parameters('virtualMachineName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-04-01",
+            "location": "[parameters('Region')]",
+           
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('VMSize')]"
+                },
+                
+                "storageProfile": {
+                    "osDisk": {
+                        "name": "[concat(parameters('virtualMachineName'), '-DISKOS')]",
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+              "osProfile": {
+                "computerName": "[parameters('virtualMachineName')]",
+                "adminUsername": "[parameters('adminUsername')]",
+                "adminPassword": "[parameters('adminPassword')]",
+                "windowsConfiguration": {
+                  "enableAutomaticUpdates": true,
+                  "provisionVmAgent": true
+                }
+              },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            },
+            "tags": {
+                "Environment": "DEV",
+                "Business Owner": "Example",
+                "Department": "Example",
+              "Cost Centre": "B726",
+              "Project": "JFL"
+            }
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        }
+    }
+}
